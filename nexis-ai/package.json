@@ -1,0 +1,47 @@
+{
+	"name": "@intelation/nexis-ai",
+	"version": "0.1.0",
+	"description": "Privacy middleware for the Vercel AI SDK: removes personal data (PII) from every prompt before it reaches the LLM. GDPR, UK GDPR, HIPAA. Powered by Intelation Nexis.",
+	"license": "MIT",
+	"homepage": "https://www.intelation.com/integrations/javascript",
+	"repository": { "type": "git", "url": "git+https://github.com/intelation-labs/nexis-js.git", "directory": "nexis-ai" },
+	"bugs": "https://github.com/intelation-labs/nexis-js/issues",
+	"keywords": [
+		"ai-sdk",
+		"vercel-ai",
+		"llm",
+		"middleware",
+		"nexis",
+		"intelation",
+		"pii",
+		"redact",
+		"privacy",
+		"gdpr",
+		"hipaa",
+		"guardrail"
+	],
+	"author": { "name": "Intelation", "email": "integrations@intelation.com" },
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+	"files": ["dist", "!dist/**/*.map"],
+	"engines": { "node": ">=18" },
+	"scripts": {
+		"build": "tsc -p tsconfig.json",
+		"test": "tsc -p tsconfig.test.json && node --test \".test-build/test/**/*.test.js\"",
+		"prepublishOnly": "npm run build && npm test"
+	},
+	"dependencies": {
+		"@intelation/nexis": "^0.1.0"
+	},
+	"peerDependencies": {
+		"ai": ">=5"
+	},
+	"devDependencies": {
+		"@types/node": "^22.20.5",
+		"ai": "^7.0.153",
+		"typescript": "5.9.3"
+	},
+	"publishConfig": { "access": "public" }
+}

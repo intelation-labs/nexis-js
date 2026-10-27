@@ -1,0 +1,47 @@
+{
+	"name": "@intelation/nexis",
+	"version": "0.1.0",
+	"description": "Find and remove personal data (PII) from text – redact, mask, hash or encrypt emails, names, NHS and SSN numbers. GDPR, UK GDPR, HIPAA. SDK and CLI for Intelation Nexis. Zero dependencies.",
+	"license": "MIT",
+	"homepage": "https://www.intelation.com/integrations/javascript",
+	"repository": { "type": "git", "url": "git+https://github.com/intelation-labs/nexis-js.git", "directory": "nexis" },
+	"bugs": "https://github.com/intelation-labs/nexis-js/issues",
+	"keywords": [
+		"nexis",
+		"intelation",
+		"pii",
+		"redact",
+		"anonymization",
+		"privacy",
+		"gdpr",
+		"hipaa",
+		"dlp",
+		"llm",
+		"ai-safety",
+		"personal-data"
+	],
+	"author": { "name": "Intelation", "email": "integrations@intelation.com" },
+	"type": "module",
+	"main": "./dist/cjs/index.js",
+	"module": "./dist/esm/index.js",
+	"types": "./dist/esm/index.d.ts",
+	"exports": {
+		".": {
+			"import": { "types": "./dist/esm/index.d.ts", "default": "./dist/esm/index.js" },
+			"require": { "types": "./dist/cjs/index.d.ts", "default": "./dist/cjs/index.js" }
+		}
+	},
+	"bin": { "nexis": "./dist/esm/cli.js" },
+	"files": ["dist", "!dist/**/*.map"],
+	"engines": { "node": ">=18" },
+	"scripts": {
+		"build": "tsc -p tsconfig.json && tsc -p tsconfig.cjs.json && node scripts/mark-cjs.mjs",
+		"test": "tsc -p tsconfig.test.json && node --test \".test-build/test/**/*.test.js\"",
+		"prepublishOnly": "npm run build && npm test"
+	},
+	"devDependencies": {
+		"@types/node": "^22.20.5",
+		"typescript": "5.9.3"
+	},
+	"publishConfig": { "access": "public" }
+}

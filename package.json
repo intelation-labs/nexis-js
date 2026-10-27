@@ -1,0 +1,9 @@
+{
+	"name": "nexis-integrations",
+	"private": true,
+	"workspaces": ["nexis", "nexis-mcp", "nexis-ai"],
+	"scripts": {
+		"build": "npm run build -w @intelation/nexis && npm run build -w @intelation/nexis-mcp && npm run build -w @intelation/nexis-ai",
+		"test": "npm test -w @intelation/nexis && npm test -w @intelation/nexis-mcp && npm test -w @intelation/nexis-ai"
+	}
+}

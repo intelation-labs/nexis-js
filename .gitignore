@@ -1,0 +1,8 @@
+node_modules
+dist
+.test-build
+*.tgz
+.env
+# Local-only: machine-specific MCP config and the AI SDK try-out script
+.mcp.json
+try-nexis-ai.mjs
