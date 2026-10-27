@@ -1,0 +1,43 @@
+# Publishes the three packages to npm. Run it from GitHub: Actions -> Publish -> Run workflow.
+# Versions already on npm are skipped, so bump "version" in a package.json to release it again.
+name: Publish
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # npm provenance, and trusted publishing once it is set up
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      # Trusted publishing needs npm 11.5.1 or later
+      - run: npm install -g npm@11
+
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+
+      # @intelation/nexis first: the other two depend on it
+      - name: Publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          for dir in nexis nexis-mcp nexis-ai; do
+            name=$(node -p "require('./$dir/package.json').name")
+            version=$(node -p "require('./$dir/package.json').version")
+            if npm view "$name@$version" version >/dev/null 2>&1; then
+              echo "$name@$version is already on npm, skipping"
+            else
+              npm publish -w "$dir" --access public --provenance
+            fi
+          done
