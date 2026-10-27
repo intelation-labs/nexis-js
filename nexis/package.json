@@ -31,7 +31,7 @@
 			"require": { "types": "./dist/cjs/index.d.ts", "default": "./dist/cjs/index.js" }
 		}
 	},
-	"bin": { "nexis": "./dist/esm/cli.js" },
+	"bin": { "nexis": "dist/esm/cli.js" },
 	"files": ["dist", "!dist/**/*.map"],
 	"engines": { "node": ">=18" },
 	"scripts": {

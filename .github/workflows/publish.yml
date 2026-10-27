@@ -1,4 +1,5 @@
-# Publishes the three packages to npm. Run it from GitHub: Actions -> Publish -> Run workflow.
+# Stages the three packages on npm. Run it from GitHub: Actions -> Publish -> Run workflow,
+# then approve each staged version on npmjs.com (approval asks for 2FA).
 # Versions already on npm are skipped, so bump "version" in a package.json to release it again.
 name: Publish
 
@@ -20,7 +21,7 @@ jobs:
           node-version: 22
           registry-url: https://registry.npmjs.org
 
-      # Trusted publishing needs npm 11.5.1 or later
+      # Staged publishing of new packages needs a recent npm 11
       - run: npm install -g npm@11
 
       - run: npm ci
@@ -28,7 +29,7 @@ jobs:
       - run: npm test
 
       # @intelation/nexis first: the other two depend on it
-      - name: Publish
+      - name: Stage
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
@@ -38,6 +39,6 @@ jobs:
             if npm view "$name@$version" version >/dev/null 2>&1; then
               echo "$name@$version is already on npm, skipping"
             else
-              npm publish -w "$dir" --access public --provenance
+              (cd "$dir" && npm stage publish --access public --provenance)
             fi
           done
