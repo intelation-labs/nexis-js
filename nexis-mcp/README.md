@@ -8,6 +8,8 @@ Full guide: [intelation.com/integrations/javascript](https://www.intelation.com/
 
 Get a free API key at https://nexis.intelation.com, then add the server to your MCP client.
 
+[![Add to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=nexis&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBpbnRlbGF0aW9uL25leGlzLW1jcCJdLCJlbnYiOnsiTkVYSVNfQVBJX0tFWSI6InlvdXIta2V5In19) (then replace `your-key` with your API key)
+
 **Claude Desktop / Cursor** (`mcpServers` in the config file):
 
 ```json

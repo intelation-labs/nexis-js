@@ -1,6 +1,7 @@
 {
 	"name": "@intelation/nexis-mcp",
-	"version": "0.2.0",
+	"version": "0.2.1",
+	"mcpName": "io.github.intelation-labs/nexis-mcp",
 	"description": "MCP server that lets Claude, Cursor and other AI assistants find and remove personal data (PII) from text. Regulation-aware (GDPR, UK GDPR, HIPAA). Powered by Intelation Nexis.",
 	"license": "MIT",
 	"homepage": "https://www.intelation.com/integrations/javascript",
@@ -29,6 +30,7 @@
 	"engines": { "node": ">=18" },
 	"scripts": {
 		"build": "tsc -p tsconfig.json",
+		"pack:mcpb": "npm run build && node scripts/pack-mcpb.mjs",
 		"test": "tsc -p tsconfig.test.json && node --test \".test-build/test/**/*.test.js\"",
 		"prepublishOnly": "npm run build && npm test"
 	},

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1
+
+### @intelation/nexis-mcp
+- Listed on the official MCP Registry as `io.github.intelation-labs/nexis-mcp` (new `mcpName` in `package.json`).
+- New `npm run pack:mcpb` builds an MCPB bundle for Smithery and one-click Claude Desktop installs.
+- "Add to Cursor" button in the README.
+
 ## 0.2.0
 
 ### @intelation/nexis

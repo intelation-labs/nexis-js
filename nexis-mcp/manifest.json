@@ -1,0 +1,40 @@
+{
+	"$schema": "https://raw.githubusercontent.com/modelcontextprotocol/mcpb/main/dist/mcpb-manifest.schema.json",
+	"manifest_version": "0.3",
+	"name": "nexis-mcp",
+	"display_name": "Intelation Nexis",
+	"version": "0.2.1",
+	"description": "Find and remove personal data (PII) from text. Regulation-aware: GDPR, UK GDPR, HIPAA.",
+	"author": { "name": "Intelation", "email": "integrations@intelation.com", "url": "https://www.intelation.com" },
+	"homepage": "https://www.intelation.com/integrations/javascript",
+	"repository": { "type": "git", "url": "https://github.com/intelation-labs/nexis-js" },
+	"license": "MIT",
+	"keywords": ["pii", "redact", "privacy", "gdpr", "hipaa", "anonymization"],
+	"server": {
+		"type": "node",
+		"entry_point": "dist/index.js",
+		"mcp_config": {
+			"command": "node",
+			"args": ["${__dirname}/dist/index.js"],
+			"env": { "NEXIS_API_KEY": "${user_config.api_key}" }
+		}
+	},
+	"tools": [
+		{ "name": "anonymize_text", "description": "Redact, replace, mask, hash, pseudonymize, tokenize or encrypt PII" },
+		{ "name": "detect_pii", "description": "List the PII found, without changing the text" },
+		{ "name": "list_countries", "description": "Countries and regulations in your plan" }
+	],
+	"user_config": {
+		"api_key": {
+			"type": "string",
+			"title": "Nexis API key",
+			"description": "Get a free key at https://nexis.intelation.com",
+			"sensitive": true,
+			"required": true
+		}
+	},
+	"compatibility": {
+		"platforms": ["darwin", "win32", "linux"],
+		"runtimes": { "node": ">=18.0.0" }
+	}
+}

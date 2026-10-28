@@ -1,0 +1,55 @@
+{
+	"$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+	"name": "io.github.intelation-labs/nexis-mcp",
+	"title": "Intelation Nexis",
+	"description": "Find and remove personal data (PII) from text. Regulation-aware: GDPR, UK GDPR, HIPAA.",
+	"websiteUrl": "https://www.intelation.com/integrations/javascript",
+	"repository": {
+		"url": "https://github.com/intelation-labs/nexis-js",
+		"source": "github",
+		"subfolder": "nexis-mcp"
+	},
+	"version": "0.2.1",
+	"packages": [
+		{
+			"registryType": "npm",
+			"identifier": "@intelation/nexis-mcp",
+			"version": "0.2.1",
+			"transport": { "type": "stdio" },
+			"environmentVariables": [
+				{
+					"name": "NEXIS_API_KEY",
+					"description": "Your Nexis API key. Get a free one at https://nexis.intelation.com",
+					"isRequired": true,
+					"isSecret": true,
+					"format": "string"
+				},
+				{
+					"name": "NEXIS_COUNTRY",
+					"description": "Default regulation|country|sub-region|language. Otherwise the first country in your plan",
+					"isRequired": false,
+					"format": "string"
+				},
+				{
+					"name": "NEXIS_ENCRYPTION_KEY",
+					"description": "Fernet key for the encryption method and decrypt_text",
+					"isRequired": false,
+					"isSecret": true,
+					"format": "string"
+				},
+				{
+					"name": "NEXIS_ALLOW_DECRYPT",
+					"description": "Set to true to turn on decrypt_text. The assistant then sees the original personal data",
+					"isRequired": false,
+					"format": "boolean"
+				},
+				{
+					"name": "NEXIS_BASE_URL",
+					"description": "Only for a dedicated or on-premises Nexis instance",
+					"isRequired": false,
+					"format": "string"
+				}
+			]
+		}
+	]
+}
