@@ -25,6 +25,16 @@ describe('validation', () => {
 		});
 		assert.throws(() => parseCountry('nonsense'), NexisError);
 	});
+	it('treats a blank language in a country object as "en"', () => {
+		assert.deepEqual(parseCountry({ regulation: ' GDPR ', country: 'Germany', language: undefined }), {
+			regulation: 'GDPR',
+			country: 'Germany',
+			subRegion: '',
+			language: 'en',
+		});
+		assert.equal(parseCountry({ regulation: 'GDPR', country: 'Germany', language: '  ' }).language, 'en');
+		assert.throws(() => parseCountry({ regulation: 'GDPR', country: ' ' }), /Country ID is not valid/);
+	});
 });
 
 describe('Nexis client', () => {
@@ -96,5 +106,71 @@ describe('Nexis client', () => {
 			new Nexis({ apiKey: 'k' }).decrypt('a <<ENC:x:ENC>>', { encryptionKey: KEY }),
 			/Could not decrypt/,
 		);
+	});
+
+	it('returns a partial decrypt with counts when allowPartial is set', async () => {
+		globalThis.fetch = (async () => json(200, { decrypted_text: 'John and <<ENC:y:ENC>>' })) as typeof fetch;
+		const nexis = new Nexis({ apiKey: 'k' });
+		const input = '<<ENC:x:ENC>> and <<ENC:y:ENC>>';
+		await assert.rejects(nexis.decrypt(input, { encryptionKey: KEY }), /1 of 2 encrypted values/);
+		const res = await nexis.decrypt(input, { encryptionKey: KEY, allowPartial: true });
+		assert.equal(res.decrypted_text, 'John and <<ENC:y:ENC>>');
+		assert.equal(res.decrypted_count, 1);
+		assert.equal(res.failed_count, 1);
+		await assert.rejects(nexis.decrypt('plain', { encryptionKey: KEY, allowPartial: true }), /No encrypted values/);
+		await assert.rejects(nexis.decrypt(input, { encryptionKey: 'bad', allowPartial: true }), /not a valid Fernet key/);
+	});
+
+	it('shows FastAPI validation details without the request values', async () => {
+		globalThis.fetch = (async () =>
+			json(422, {
+				detail: [
+					{ loc: ['body', 'text'], msg: 'Field required', type: 'missing', input: 'John Smith' },
+					{ loc: ['body', 'country'], msg: 'Too short', type: 'x', input: 'secret' },
+					{ loc: ['body', 'a'], msg: 'A', type: 'x' },
+					{ loc: ['body', 'b'], msg: 'B', type: 'x' },
+					{ loc: ['body', 'c'], msg: 'C', type: 'x' },
+				],
+			})) as typeof fetch;
+		const error = await new Nexis({ apiKey: 'k', country: 'A|B||en' }).redact('x').catch((e: NexisError) => e);
+		assert.equal(error.message, 'text: Field required; country: Too short; a: A; and 2 more');
+		assert.equal(error.status, 422);
+		assert.doesNotMatch(error.message, /John Smith|secret/);
+
+		globalThis.fetch = (async () => json(400, { detail: 'Bad thing' })) as typeof fetch;
+		await assert.rejects(new Nexis({ apiKey: 'k', country: 'A|B||en' }).redact('x'), /^NexisError: Bad thing$/);
+	});
+});
+
+describe('anonymizeJson', () => {
+	const nexis = () => new Nexis({ apiKey: 'k', country: 'UK GDPR|United Kingdom||en' });
+
+	it('uploads the data as a file with the options, always naming the method', async () => {
+		let seen: { url: string; init: RequestInit } | undefined;
+		globalThis.fetch = (async (url: string, init: RequestInit) => {
+			seen = { url, init };
+			return json(200, { anonymised_data: { name: '[REDACTED]' } });
+		}) as typeof fetch;
+		const res = await nexis().anonymizeJson({ name: 'John Smith' }, { excludedEntities: ['URL'] });
+		assert.deepEqual(res.anonymized_data, { name: '[REDACTED]' });
+		assert.equal(seen?.url, 'https://api.nexis.intelation.com/api/structured/json/');
+		const headers = seen?.init.headers as Record<string, string>;
+		assert.match(headers['Idempotency-Key'], /^nexis-js-/);
+		assert.equal(headers['Content-Type'], undefined);
+		const form = seen?.init.body as FormData;
+		assert.deepEqual(JSON.parse(await (form.get('file') as Blob).text()), { name: 'John Smith' });
+		const options = JSON.parse(String(form.get('options')));
+		assert.equal(options.anonymisation_method, 'redact');
+		assert.equal(options.regulation, 'UK GDPR');
+		assert.deepEqual(options.excluded_entities, ['URL']);
+	});
+
+	it('rejects what the JSON endpoint does not support before calling the API', async () => {
+		globalThis.fetch = (async () => {
+			throw new Error('should not be called');
+		}) as typeof fetch;
+		await assert.rejects(nexis().anonymizeJson({ a: 1 }, { method: 'hash' as never }), /does not support the hash method/);
+		await assert.rejects(nexis().anonymizeJson({ a: 1 }, { selectedEntities: ['PERSON'] } as never), /selectedEntities/);
+		await assert.rejects(nexis().anonymizeJson('text' as never), /object or array/);
 	});
 });

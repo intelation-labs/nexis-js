@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { createRequire } from 'node:module';
 import { Nexis } from './client.js';
 import type { AnonymizeOptions } from './client.js';
 import { NexisError } from './errors.js';
@@ -12,11 +13,13 @@ const METHODS: AnonymizeOptions['method'][] = [
 	'tokenization',
 	'encryption',
 ];
+const COMMANDS = [...METHODS, 'detect', 'decrypt', 'countries'];
 
 const HELP = `nexis – find and remove personal data (PII) from text
 
 Usage:
   nexis <command> [text] [--country "regulation|country|sub-region|language"] [--json]
+  nexis --version
 
 Commands:
   redact | mask | hash | replace | pseudonymization | tokenization | encryption   anonymize text
@@ -40,6 +43,14 @@ async function main() {
 	const args = process.argv.slice(2);
 	const command = args.shift();
 	if (!command || command === '-h' || command === '--help') return console.log(HELP);
+	if (command === '-v' || command === '--version') {
+		// The CLI runs from dist/esm/, two levels below package.json.
+		return console.log(createRequire(import.meta.url)('../../package.json').version);
+	}
+	// Checked before the API key and stdin, so a typo is reported as a typo.
+	if (!COMMANDS.includes(command as (typeof COMMANDS)[number])) {
+		throw new NexisError(`Unknown command "${command}"`, { description: 'Run nexis --help' });
+	}
 
 	let country: string | undefined;
 	let json = false;
@@ -64,11 +75,8 @@ async function main() {
 		return print(json ? res : res.decrypted_text);
 	}
 	const method = METHODS.find((m) => m === command);
-	if (method) {
-		const res = await nexis.anonymize(text, { method });
-		return print(json ? res : (res.anonymized_text ?? res));
-	}
-	throw new NexisError(`Unknown command "${command}"`, { description: 'Run nexis --help' });
+	const res = await nexis.anonymize(text, { method });
+	return print(json ? res : (res.anonymized_text ?? res));
 }
 
 main().catch((error: Error & { description?: string }) => {

@@ -24,6 +24,7 @@ const { anonymized_text } = await nexis.redact('Email john.smith@example.com, NH
 ```bash
 npx @intelation/nexis redact "Call Jane Doe on 020 7946 0958"
 echo "patient notes..." | npx @intelation/nexis pseudonymization --country "HIPAA|United States||en"
+npx @intelation/nexis --version
 ```
 
 ## Methods
@@ -39,11 +40,31 @@ echo "patient notes..." | npx @intelation/nexis pseudonymization --country "HIPA
 | `encryption` / `decrypt` | reversible, needs a Fernet key (`NEXIS_ENCRYPTION_KEY`) |
 | `detect` | lists the PII found, text unchanged (max 5,000 chars) |
 
-Options on every call: `country` (`"regulation|country|sub-region|language"` or object; defaults to the first country in your plan), `selectedEntities`, `excludedEntities`, `allowList`, `denyList`.
+Options on every call: `country` (`"regulation|country|sub-region|language"` or object; defaults to the first country in your plan, and a blank language means `en`), `selectedEntities`, `excludedEntities`, `allowList`, `denyList`.
+
+## JSON
+
+`anonymizeJson` cleans every string value in an object or array and keeps the keys and other values (Basic plan and above):
+
+```ts
+const { anonymized_data } = await nexis.anonymizeJson({ customer: { name: 'Jane Doe', orders: 3 } });
+// -> { customer: { name: '[REDACTED]', orders: 3 } }
+```
+
+It supports `redact`, `mask`, `replace`, `encryption` and `pseudonymization` (listed in `JSON_METHODS`), and `excludedEntities` but not `selectedEntities` or `fromEnd`. For anything else, call `anonymize` on each string.
+
+## Decrypt
+
+`decrypt` throws when any value stays encrypted (for example with the wrong key). Pass `allowPartial: true` to get the text back anyway, with `decrypted_count` and `failed_count`:
+
+```ts
+const res = await nexis.decrypt(text, { allowPartial: true });
+if (res.failed_count) console.warn(`${res.failed_count} values could not be decrypted`);
+```
 
 ## Errors
 
-Failures throw `NexisError` with a plain-English `message`, a `description` saying what to do next, and the HTTP `status`.
+Failures throw `NexisError` with a plain-English `message`, a `description` saying what to do next, and the HTTP `status`. Validation errors list the fields at fault (e.g. `text: Field required`), never the values you sent.
 
 ## Also available
 

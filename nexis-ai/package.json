@@ -1,6 +1,6 @@
 {
 	"name": "@intelation/nexis-ai",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "Privacy middleware for the Vercel AI SDK: removes personal data (PII) from every prompt before it reaches the LLM. GDPR, UK GDPR, HIPAA. Powered by Intelation Nexis.",
 	"license": "MIT",
 	"homepage": "https://www.intelation.com/integrations/javascript",
@@ -33,7 +33,7 @@
 		"prepublishOnly": "npm run build && npm test"
 	},
 	"dependencies": {
-		"@intelation/nexis": "^0.1.0"
+		"@intelation/nexis": "^0.2.0"
 	},
 	"peerDependencies": {
 		"ai": ">=5"

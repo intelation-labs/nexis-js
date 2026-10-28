@@ -28,12 +28,22 @@ async function run(fn: () => Promise<{ content: { type: 'text'; text: string }[]
 	}
 }
 
+export interface ServerOptions {
+	/** Version the server reports to clients. The nexis-mcp command passes its package version. */
+	version: string;
+	/**
+	 * Register decrypt_text. Default false. When on, the model sees the decrypted personal data, so enable it only
+	 * when the assistant is meant to read the original values.
+	 */
+	allowDecrypt?: boolean;
+}
+
 /**
  * Creates the Nexis MCP server. The encryption key is read only from NEXIS_ENCRYPTION_KEY and is never a tool
- * argument, so it never passes through the model.
+ * argument, so the key itself never reaches the model. With allowDecrypt on, the decrypted values do.
  */
-export function createServer(nexis: Nexis): McpServer {
-	const server = new McpServer({ name: 'nexis', version: '0.1.0' });
+export function createServer(nexis: Nexis, options: ServerOptions): McpServer {
+	const server = new McpServer({ name: 'nexis', version: options.version });
 
 	server.registerTool(
 		'anonymize_text',
@@ -47,7 +57,7 @@ export function createServer(nexis: Nexis): McpServer {
 					.enum(['redact', 'replace', 'mask', 'hash', 'pseudonymization', 'tokenization', 'encryption'])
 					.default('redact')
 					.describe(
-						'redact -> [REDACTED]; replace -> <PERSON>; mask -> ****; hash -> short SHA-256; pseudonymization -> realistic fake value; tokenization -> ENTITY_001; encryption -> reversible with the key in NEXIS_ENCRYPTION_KEY',
+						'redact -> [REDACTED]; replace -> <PERSON>; mask -> ****; hash -> short SHA-256; pseudonymization -> realistic fake value; tokenization -> ENTITY_001; encryption -> reversible with the key in NEXIS_ENCRYPTION_KEY (decrypt_text is only available when the server sets NEXIS_ALLOW_DECRYPT=true)',
 					),
 				country,
 				...entities,
@@ -75,21 +85,23 @@ export function createServer(nexis: Nexis): McpServer {
 		(args) => run(async () => data((await nexis.detect(args.text, args)) as NexisResponse)),
 	);
 
-	server.registerTool(
-		'decrypt_text',
-		{
-			title: 'Decrypt text',
-			description:
-				'Restore values that anonymize_text encrypted (they look like <<ENC:...:ENC>>). Uses the key in NEXIS_ENCRYPTION_KEY.',
-			inputSchema: { encryptedText: z.string() },
-			annotations: { readOnlyHint: true, openWorldHint: true },
-		},
-		(args) =>
-			run(async () => {
-				const res = await nexis.decrypt(args.encryptedText);
-				return text(String(res.decrypted_text ?? JSON.stringify(res)));
-			}),
-	);
+	if (options.allowDecrypt) {
+		server.registerTool(
+			'decrypt_text',
+			{
+				title: 'Decrypt text',
+				description:
+					'Restore values that anonymize_text encrypted (they look like <<ENC:...:ENC>>). Uses the key in NEXIS_ENCRYPTION_KEY. Warning: the result contains the original personal data, which you (the assistant) will then see. Only decrypt when the user needs the original values.',
+				inputSchema: { encryptedText: z.string() },
+				annotations: { readOnlyHint: true, openWorldHint: true },
+			},
+			(args) =>
+				run(async () => {
+					const res = await nexis.decrypt(args.encryptedText);
+					return text(String(res.decrypted_text ?? JSON.stringify(res)));
+				}),
+		);
+	}
 
 	server.registerTool(
 		'list_countries',

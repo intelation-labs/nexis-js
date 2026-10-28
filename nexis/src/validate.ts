@@ -18,23 +18,19 @@ export const SEP = '|';
 
 /** Parses "regulation|country|sub-region|language" (sub-region and language can be empty). */
 export function parseCountry(value: string | Country): Required<Country> {
-	if (typeof value === 'object' && value) {
-		return { subRegion: '', language: 'en', ...value } as Required<Country>;
-	}
-	const raw = String(value ?? '').trim();
-	const parts = raw.split(SEP);
-	const [regulation, country, subRegion, language] = parts;
-	if (!regulation?.trim() || !country?.trim() || parts.length > 4) {
+	const isObject = typeof value === 'object' && value !== null;
+	const parts = isObject
+		? [value.regulation, value.country, value.subRegion, value.language]
+		: String(value ?? '').trim().split(SEP);
+	// Objects and text are trimmed alike, so a blank language still falls back to "en".
+	const [regulation, country, subRegion, language] = parts.map((p) => String(p ?? '').trim());
+	if (!regulation || !country || parts.length > 4) {
+		const raw = isObject ? parts.map((p) => p ?? '').join(SEP) : String(value ?? '').trim();
 		throw new NexisError(`Country ID is not valid: "${raw}"`, {
 			description: 'Use the format regulation|country|sub-region|language (sub-region and language can be empty).',
 		});
 	}
-	return {
-		regulation: regulation.trim(),
-		country: country.trim(),
-		subRegion: (subRegion ?? '').trim(),
-		language: (language ?? '').trim() || 'en',
-	};
+	return { regulation, country, subRegion: subRegion ?? '', language: language || 'en' };
 }
 
 export const toList = (value: string | string[] | undefined): string[] =>

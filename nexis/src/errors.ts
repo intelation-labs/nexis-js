@@ -18,13 +18,32 @@ export class NexisError extends Error {
 
 type Body = Record<string, unknown>;
 
+const MAX_DETAIL_ITEMS = 3;
+
+/**
+ * FastAPI validation errors arrive as [{ loc, msg, type, input }]. Builds "field: msg" from each item; `input`
+ * is left out because it can hold the user's text.
+ */
+function validationMessage(detail: unknown[]): string {
+	const items = detail
+		.filter((d): d is Body => !!d && typeof d === 'object' && typeof (d as Body).msg === 'string')
+		.map((d) => {
+			const loc = Array.isArray(d.loc) ? d.loc : [];
+			const field = loc.length ? String(loc[loc.length - 1]) : '';
+			return field ? `${field}: ${d.msg}` : String(d.msg);
+		});
+	const more = items.length - MAX_DETAIL_ITEMS;
+	return items.slice(0, MAX_DETAIL_ITEMS).join('; ') + (more > 0 ? `; and ${more} more` : '');
+}
+
 /** Turns raw Nexis API errors into messages a non-technical user can act on. */
 export function friendlyApiError(status: number, body: Body): NexisError {
-	const nested = body.detail && typeof body.detail === 'object' ? (body.detail as Body) : {};
+	const nested = body.detail && typeof body.detail === 'object' && !Array.isArray(body.detail) ? (body.detail as Body) : {};
 	const codes = [body.code, body.error_code, body.error, nested.code];
 	const code = codes.find((c) => typeof c === 'string') as string | undefined;
 	// Only the API's own message fields, never the request (which holds the user's text).
-	const apiMessage = [body.detail, body.message, nested.message].filter((v) => typeof v === 'string').join(' ');
+	const listed = Array.isArray(body.detail) ? validationMessage(body.detail) : '';
+	const apiMessage = [body.detail, body.message, nested.message, listed].filter((v) => typeof v === 'string' && v).join(' ');
 	const e = (message: string, description: string) => new NexisError(message, { description, status, code });
 
 	if (codes.includes('country_not_subscribed')) {

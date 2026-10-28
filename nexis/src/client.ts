@@ -41,6 +41,25 @@ export interface DetectOnlyOptions extends DetectOptions {
 	showExplanations?: boolean;
 }
 
+/** Methods the JSON endpoint supports. For the others, use anonymize() on each string value. */
+export const JSON_METHODS = ['redact', 'mask', 'replace', 'encryption', 'pseudonymization'] as const;
+export type JsonMethod = (typeof JSON_METHODS)[number];
+
+/** Options for anonymizeJson. The JSON endpoint has no selectedEntities or fromEnd. */
+export interface AnonymizeJsonOptions extends Omit<AnonymizeOptions, 'method' | 'selectedEntities' | 'fromEnd'> {
+	method?: JsonMethod;
+}
+
+export interface DecryptOptions {
+	/** Fernet key. Defaults to NEXIS_ENCRYPTION_KEY. */
+	encryptionKey?: string;
+	/**
+	 * Return the reply even when some values stay encrypted, with decrypted_count and failed_count added.
+	 * Default false: any value left encrypted is an error.
+	 */
+	allowPartial?: boolean;
+}
+
 /** Raw JSON reply from the Nexis API. */
 export type NexisResponse = Record<string, any>;
 
@@ -72,13 +91,15 @@ export class Nexis {
 		this.defaultCountry = options.country;
 	}
 
-	/** Sends an authenticated JSON request. Errors become NexisError with a friendly message. */
+	/** Sends an authenticated JSON (or multipart) request. Errors become NexisError with a friendly message. */
 	private async request(
 		method: 'GET' | 'POST',
 		path: string,
 		body?: object,
 		headers: Record<string, string> = {},
 	): Promise<NexisResponse> {
+		// For multipart, fetch sets the Content-Type with its boundary itself.
+		const form = body instanceof FormData;
 		let res: Response;
 		try {
 			res = await fetch(`${this.baseUrl}${path}`, {
@@ -86,10 +107,10 @@ export class Nexis {
 				headers: {
 					Authorization: `Bearer ${this.apiKey}`,
 					Accept: 'application/json',
-					...(body ? { 'Content-Type': 'application/json' } : {}),
+					...(body && !form ? { 'Content-Type': 'application/json' } : {}),
 					...headers,
 				},
-				body: body ? JSON.stringify(body) : undefined,
+				body: form ? body : body ? JSON.stringify(body) : undefined,
 				signal: AbortSignal.timeout(this.timeoutMs),
 			});
 		} catch (error) {
@@ -108,6 +129,21 @@ export class Nexis {
 			throw friendlyApiError(res.status, data && typeof data === 'object' ? (data as Record<string, unknown>) : {});
 		}
 		return data as NexisResponse;
+	}
+
+	/** One key per call: if Nexis says the earlier request under it failed or is stuck, retry under the next key. */
+	private async postIdempotent(path: string, body: object): Promise<NexisResponse> {
+		const key = `nexis-js-${randomUUID()}`;
+		let lastError: unknown;
+		for (let attempt = 0; attempt < MAX_IDEMPOTENCY_KEYS; attempt++) {
+			try {
+				return await this.request('POST', path, body, { 'Idempotency-Key': attempt ? `${key}-${attempt}` : key });
+			} catch (error) {
+				lastError = error;
+				if (!IDEMPOTENCY_RETRY_CODES.includes((error as NexisError).code ?? '')) break;
+			}
+		}
+		throw lastError;
 	}
 
 	/** Account details, including the countries in your plan. */
@@ -143,40 +179,25 @@ export class Nexis {
 		return (this.firstCountry ??= (await this.countries())[0]);
 	}
 
+	private async countryFields(country?: string | Country): Promise<Record<string, unknown>> {
+		const c = await this.resolveCountry(country);
+		const body: Record<string, unknown> = { regulation: c.regulation, country: c.country, language: c.language };
+		if (c.subRegion) body.sub_region = c.subRegion;
+		return body;
+	}
+
 	private async baseBody(text: string, options: DetectOptions): Promise<Record<string, unknown>> {
 		if (typeof text !== 'string' || !text.trim()) throw new NexisError('Text is empty');
-		const c = await this.resolveCountry(options.country);
-		const body: Record<string, unknown> = {
-			text,
-			regulation: c.regulation,
-			country: c.country,
-			language: c.language,
-		};
-		if (c.subRegion) body.sub_region = c.subRegion;
+		const body: Record<string, unknown> = { text, ...(await this.countryFields(options.country)) };
 		if (options.selectedEntities?.length) body.selected_entities = options.selectedEntities;
 		if (options.excludedEntities?.length) body.excluded_entities = options.excludedEntities;
 		return body;
 	}
 
-	/** Lists the PII found in the text without changing it. */
-	async detect(text: string, options: DetectOnlyOptions = {}): Promise<NexisResponse> {
-		// Nexis counts characters as Unicode code points, so emoji count once.
-		if ([...String(text)].length > DETECT_MAX_CHARS) {
-			throw new NexisError('Text is too long for detect', {
-				description: `Detect accepts up to ${DETECT_MAX_CHARS.toLocaleString('en')} characters. Split the text into smaller parts.`,
-			});
-		}
-		const body = await this.baseBody(text, options);
-		if (options.showExplanations) body.show_explanations = true;
-		return this.request('POST', '/api/detect/', body);
-	}
-
-	/** Anonymizes the text. Returns the full API reply. */
-	async anonymize(text: string, options: AnonymizeOptions = {}): Promise<NexisResponse> {
+	/** Method fields shared by the text and JSON endpoints. The method is always sent: the JSON endpoint defaults to mask. */
+	private methodFields(options: AnonymizeOptions): Record<string, unknown> {
 		const method = options.method ?? 'redact';
-		const body = await this.baseBody(text, options);
-		body.anonymisation_method = method;
-
+		const body: Record<string, unknown> = { anonymisation_method: method };
 		if (method === 'encryption') {
 			const key = (options.encryptionKey ?? process.env.NEXIS_ENCRYPTION_KEY ?? '').trim();
 			if (!isFernetKey(key)) {
@@ -199,24 +220,59 @@ export class Nexis {
 		}
 		if (options.allowList?.length) body.allow_list = toList(options.allowList);
 		if (options.denyList?.length) body.deny_list = toList(options.denyList);
+		return body;
+	}
 
-		// One key per call: if Nexis says the earlier request under it failed or is stuck, retry under the next key.
-		const key = `nexis-js-${randomUUID()}`;
-		let lastError: unknown;
-		for (let attempt = 0; attempt < MAX_IDEMPOTENCY_KEYS; attempt++) {
-			try {
-				const res = await this.request('POST', '/api/text/', body, {
-					'Idempotency-Key': attempt ? `${key}-${attempt}` : key,
-				});
-				// The API spells it anonymised_text; expose anonymized_text too so both spellings work.
-				res.anonymized_text ??= res.anonymised_text;
-				return res;
-			} catch (error) {
-				lastError = error;
-				if (!IDEMPOTENCY_RETRY_CODES.includes((error as NexisError).code ?? '')) break;
-			}
+	/** Lists the PII found in the text without changing it. */
+	async detect(text: string, options: DetectOnlyOptions = {}): Promise<NexisResponse> {
+		// Nexis counts characters as Unicode code points, so emoji count once.
+		if ([...String(text)].length > DETECT_MAX_CHARS) {
+			throw new NexisError('Text is too long for detect', {
+				description: `Detect accepts up to ${DETECT_MAX_CHARS.toLocaleString('en')} characters. Split the text into smaller parts.`,
+			});
 		}
-		throw lastError;
+		const body = await this.baseBody(text, options);
+		if (options.showExplanations) body.show_explanations = true;
+		return this.request('POST', '/api/detect/', body);
+	}
+
+	/** Anonymizes the text. Returns the full API reply. */
+	async anonymize(text: string, options: AnonymizeOptions = {}): Promise<NexisResponse> {
+		const body = { ...(await this.baseBody(text, options)), ...this.methodFields(options) };
+		const res = await this.postIdempotent('/api/text/', body);
+		// The API spells it anonymised_text; expose anonymized_text too so both spellings work.
+		res.anonymized_text ??= res.anonymised_text;
+		return res;
+	}
+
+	/**
+	 * Anonymizes the string values in a JSON object or array; keys and other values are kept. Returns the full API
+	 * reply, with the result in anonymized_data. Supports the methods in JSON_METHODS. Needs the Basic plan or above.
+	 */
+	async anonymizeJson(data: object, options: AnonymizeJsonOptions = {}): Promise<NexisResponse> {
+		if (!data || typeof data !== 'object') throw new NexisError('JSON data must be an object or array');
+		const method = options.method ?? 'redact';
+		if (!(JSON_METHODS as readonly string[]).includes(method)) {
+			throw new NexisError(`anonymizeJson does not support the ${method} method`, {
+				description: `Use one of ${JSON_METHODS.join(', ')}, or anonymize() on each string value.`,
+			});
+		}
+		// Not in the type, but plain JavaScript callers can still pass them.
+		const extra = options as AnonymizeOptions;
+		if (extra.selectedEntities?.length || extra.fromEnd) {
+			throw new NexisError('anonymizeJson does not support selectedEntities or fromEnd', {
+				description: 'Use excludedEntities, or anonymize() on each string value.',
+			});
+		}
+		const fields = { ...(await this.countryFields(options.country)), ...this.methodFields({ ...options, method }) };
+		if (options.excludedEntities?.length) fields.excluded_entities = options.excludedEntities;
+
+		const form = new FormData();
+		form.append('file', new Blob([JSON.stringify(data)], { type: 'application/json' }), 'data.json');
+		form.append('options', JSON.stringify(fields));
+		const res = await this.postIdempotent('/api/structured/json/', form);
+		res.anonymized_data ??= res.anonymised_data;
+		return res;
 	}
 
 	redact = (text: string, o: Omit<AnonymizeOptions, 'method'> = {}) => this.anonymize(text, { ...o, method: 'redact' });
@@ -232,9 +288,9 @@ export class Nexis {
 
 	/**
 	 * Restores values encrypted with the encryption method. Nexis leaves a value encrypted when the key does not
-	 * match and still reports success, so leftovers are reported as an error here.
+	 * match and still reports success, so leftovers are reported as an error here unless allowPartial is set.
 	 */
-	async decrypt(encryptedText: string, options: { encryptionKey?: string } = {}): Promise<NexisResponse> {
+	async decrypt(encryptedText: string, options: DecryptOptions = {}): Promise<NexisResponse> {
 		const total = countEncrypted(encryptedText);
 		if (!total) {
 			throw new NexisError('No encrypted values found', {
@@ -250,6 +306,7 @@ export class Nexis {
 		}
 		const response = await this.request('POST', '/api/decrypt/', { encrypted_text: encryptedText, encryption_key: key });
 		const left = countEncrypted(String(response.decrypted_text ?? ''));
+		if (options.allowPartial) return { ...response, decrypted_count: total - left, failed_count: left };
 		if (left) {
 			throw new NexisError(
 				left === total

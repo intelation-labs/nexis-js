@@ -1,6 +1,6 @@
 {
 	"name": "@intelation/nexis",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "Find and remove personal data (PII) from text – redact, mask, hash or encrypt emails, names, NHS and SSN numbers. GDPR, UK GDPR, HIPAA. SDK and CLI for Intelation Nexis. Zero dependencies.",
 	"license": "MIT",
 	"homepage": "https://www.intelation.com/integrations/javascript",

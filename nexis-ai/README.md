@@ -24,7 +24,15 @@ Works with any provider and with `generateText`, `streamText` and `generateObjec
 
 ## What is cleaned
 
-System prompt, user and assistant messages, and text tool results. Images and files are not scanned.
+| Prompt part | Cleaned |
+|---|---|
+| System prompt, user and assistant text | Yes |
+| Reasoning text | Yes |
+| Tool-call arguments | Yes, every string value |
+| Tool results: text, JSON, error text/JSON, and text items in content results | Yes, every string value |
+| Images and files (in messages or tool results) | **No.** They are sent to the model unchanged, so do not put personal data in them |
+
+JSON (tool arguments and results) goes to the Nexis JSON endpoint (Basic plan and above), which keeps keys, numbers and other non-text values. With `hash` or `tokenization`, or with `anonymize.selectedEntities`, each string value is cleaned separately instead, at one API call per value.
 
 ## Options
 
@@ -34,7 +42,7 @@ withNexis(model, nexis, {
 	anonymize: { country: 'HIPAA|United States||en', allowList: ['support@example.com'] },
 	onError: 'throw',           // 'throw' (default) blocks the call; 'pass-through' sends the original text
 	cache: true,                // history re-sent each turn is not processed again
-	concurrency: 5,
+	concurrency: 5,             // parallel Nexis calls, a whole number of 1 or more
 });
 ```
 
@@ -51,11 +59,11 @@ const model = withNexis(openai('gpt-4o'), new Nexis(), {
 });
 ```
 
-Restore applies to `generateText`, not to streams, and if the model alters a placeholder that part of the reply is shown as the model wrote it.
+Restore works with both `generateText` and `streamText`. When streaming, the reply may pause briefly where an original value appears, while it is decrypted. If the model alters a placeholder, that value is shown as the model wrote it and the others are still restored.
 
 ## Cost
 
-Each distinct piece of text is one Nexis API call; results are cached per model instance.
+Each distinct piece of text, and each JSON tool argument or result, is one Nexis API call; results are cached per model instance.
 
 ## Also available
 

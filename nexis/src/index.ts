@@ -1,8 +1,11 @@
-export { Nexis } from './client.js';
+export { JSON_METHODS, Nexis } from './client.js';
 export type {
+	AnonymizeJsonOptions,
 	AnonymizeOptions,
+	DecryptOptions,
 	DetectOnlyOptions,
 	DetectOptions,
+	JsonMethod,
 	Method,
 	NexisOptions,
 	NexisResponse,

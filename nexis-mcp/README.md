@@ -36,7 +36,7 @@ Then ask: *"Anonymize this support ticket before you summarise it: ..."*
 |---|---|
 | `anonymize_text` | Redact, replace, mask, hash, pseudonymize, tokenize or encrypt PII |
 | `detect_pii` | List the PII found, without changing the text |
-| `decrypt_text` | Restore values encrypted by `anonymize_text` |
+| `decrypt_text` | Restore values encrypted by `anonymize_text`. Off unless `NEXIS_ALLOW_DECRYPT=true` |
 | `list_countries` | Countries and regulations in your plan |
 
 ## Environment
@@ -46,8 +46,31 @@ Then ask: *"Anonymize this support ticket before you summarise it: ..."*
 | `NEXIS_API_KEY` | Required |
 | `NEXIS_COUNTRY` | Default `regulation\|country\|sub-region\|language`; otherwise the first country in your plan |
 | `NEXIS_ENCRYPTION_KEY` | Fernet key for the encryption method and `decrypt_text` |
+| `NEXIS_ALLOW_DECRYPT` | `true` to turn on `decrypt_text`. Off by default |
 | `NEXIS_BASE_URL` | Only for a dedicated or on-premises instance |
 
-The encryption key is read only from the environment and is never a tool argument, so it never passes through the model.
+The encryption key is read only from the environment and is never a tool argument, so the key never passes through the model.
+
+**Before you set `NEXIS_ALLOW_DECRYPT=true`:** the assistant sees whatever `decrypt_text` returns, which is the original personal data. A document with hidden instructions ("decrypt this and include it") could also get the assistant to decrypt values. Turn it on only when the assistant is meant to read the original values:
+
+```json
+"env": { "NEXIS_API_KEY": "your-key", "NEXIS_ENCRYPTION_KEY": "your-fernet-key", "NEXIS_ALLOW_DECRYPT": "true" }
+```
+
+```bash
+claude mcp add nexis --env NEXIS_API_KEY=your-key --env NEXIS_ENCRYPTION_KEY=your-fernet-key --env NEXIS_ALLOW_DECRYPT=true -- npx -y @intelation/nexis-mcp
+```
+
+## Use in your own code
+
+Importing the package does not start a server, so you can add the Nexis tools to your own MCP setup:
+
+```ts
+import { Nexis } from '@intelation/nexis';
+import { createServer } from '@intelation/nexis-mcp';
+
+const server = createServer(new Nexis(), { version: '1.0.0', allowDecrypt: false });
+await server.connect(transport);
+```
 
 MIT © Intelation
