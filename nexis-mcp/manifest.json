@@ -3,7 +3,7 @@
 	"manifest_version": "0.3",
 	"name": "nexis-mcp",
 	"display_name": "Intelation Nexis",
-	"version": "0.2.1",
+	"version": "0.2.2",
 	"description": "Find and remove personal data (PII) from text. Regulation-aware: GDPR, UK GDPR, HIPAA.",
 	"author": { "name": "Intelation", "email": "integrations@intelation.com", "url": "https://www.intelation.com" },
 	"homepage": "https://www.intelation.com/integrations/javascript",

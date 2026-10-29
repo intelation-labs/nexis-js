@@ -1,5 +1,7 @@
 # @intelation/nexis-ai
 
+[![npm](https://img.shields.io/npm/v/@intelation/nexis-ai)](https://www.npmjs.com/package/@intelation/nexis-ai) [![tests](https://github.com/intelation-labs/nexis-js/actions/workflows/test.yml/badge.svg)](https://github.com/intelation-labs/nexis-js/actions/workflows/test.yml) [![types](https://img.shields.io/npm/types/@intelation/nexis-ai)](https://www.npmjs.com/package/@intelation/nexis-ai) [![provenance](https://img.shields.io/badge/npm-provenance-2ea44f)](https://docs.npmjs.com/generating-provenance-statements) [![license](https://img.shields.io/npm/l/@intelation/nexis-ai)](https://github.com/intelation-labs/nexis-js/blob/main/nexis-ai/LICENSE.md)
+
 Privacy middleware for the [Vercel AI SDK](https://ai-sdk.dev). One line removes personal data (PII) from every prompt before it reaches the LLM. Regulation-aware (UK GDPR, GDPR, HIPAA, Privacy Act), powered by [Intelation Nexis](https://nexis.intelation.com).
 
 Full guide: [intelation.com/integrations/javascript](https://www.intelation.com/integrations/javascript).

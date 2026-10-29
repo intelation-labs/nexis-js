@@ -1,5 +1,7 @@
 # @intelation/nexis
 
+[![npm](https://img.shields.io/npm/v/@intelation/nexis)](https://www.npmjs.com/package/@intelation/nexis) [![tests](https://github.com/intelation-labs/nexis-js/actions/workflows/test.yml/badge.svg)](https://github.com/intelation-labs/nexis-js/actions/workflows/test.yml) [![types](https://img.shields.io/npm/types/@intelation/nexis)](https://www.npmjs.com/package/@intelation/nexis) [![provenance](https://img.shields.io/badge/npm-provenance-2ea44f)](https://docs.npmjs.com/generating-provenance-statements) [![license](https://img.shields.io/npm/l/@intelation/nexis)](https://github.com/intelation-labs/nexis-js/blob/main/nexis/LICENSE.md)
+
 Find and remove personal data (PII) from text before it reaches an LLM, a log, a vendor or a researcher. Regulation-aware (UK GDPR, GDPR, HIPAA, Privacy Act), powered by [Intelation Nexis](https://nexis.intelation.com). Zero dependencies, Node 18+.
 
 Full guide: [intelation.com/integrations/javascript](https://www.intelation.com/integrations/javascript).

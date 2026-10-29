@@ -1,0 +1,9 @@
+{
+	"mcpServers": {
+		"nexis": {
+			"command": "npx",
+			"args": ["-y", "@intelation/nexis-mcp"],
+			"env": { "NEXIS_API_KEY": "${NEXIS_API_KEY}" }
+		}
+	}
+}

@@ -1,5 +1,7 @@
 # @intelation/nexis-mcp
 
+[![npm](https://img.shields.io/npm/v/@intelation/nexis-mcp)](https://www.npmjs.com/package/@intelation/nexis-mcp) [![tests](https://github.com/intelation-labs/nexis-js/actions/workflows/test.yml/badge.svg)](https://github.com/intelation-labs/nexis-js/actions/workflows/test.yml) [![types](https://img.shields.io/npm/types/@intelation/nexis-mcp)](https://www.npmjs.com/package/@intelation/nexis-mcp) [![provenance](https://img.shields.io/badge/npm-provenance-2ea44f)](https://docs.npmjs.com/generating-provenance-statements) [![license](https://img.shields.io/npm/l/@intelation/nexis-mcp)](https://github.com/intelation-labs/nexis-js/blob/main/nexis-mcp/LICENSE.md)
+
 MCP server that lets Claude, Cursor, VS Code and other AI assistants find and remove personal data (PII) from text. Regulation-aware (UK GDPR, GDPR, HIPAA, Privacy Act), powered by [Intelation Nexis](https://nexis.intelation.com).
 
 Full guide: [intelation.com/integrations/javascript](https://www.intelation.com/integrations/javascript).

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.2
+
+No code changes. Discoverability only.
+
+### All packages
+- More search keywords in `package.json`.
+- Badges in each README: npm version, tests, TypeScript types, provenance, license.
+- New GitHub Actions workflow that builds and tests every push and pull request.
+
+### @intelation/nexis-mcp
+- `mcp.json` at the repo root, so the repo can be listed in the Cursor directory.
+
 ## 0.2.1
 
 ### @intelation/nexis-mcp
