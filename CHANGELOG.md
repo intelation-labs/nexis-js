@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.3
+
+No code changes. Discoverability only.
+
+### All packages
+- Glama quality score badge in each package README and the root README.
+
 ## 0.2.2
 
 No code changes. Discoverability only.

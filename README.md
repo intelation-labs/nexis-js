@@ -4,6 +4,8 @@
 
 Keep personal data (PII) out of your LLMs, logs and vendors. Find and remove names, emails, phone numbers, NHS and SSN numbers from text – regulation-aware (UK GDPR, GDPR, HIPAA, Privacy Act), powered by [Intelation Nexis](https://nexis.intelation.com).
 
+[![Nexis by Intelation MCP server – quality and maintenance score on Glama](https://glama.ai/mcp/servers/intelation-labs/nexis-js/badges/score.svg)](https://glama.ai/mcp/servers/intelation-labs/nexis-js)
+
 ![Redacting and tokenizing a patient record from the terminal](assets/cli-demo.gif)
 
 | Package | Use it to | npm |
